@@ -3,6 +3,9 @@
 
 #include <queue>
 #include <vector>
+#include <mutex>
+#include <condition_variable>
+#include <cassert>
 
 
 class BoundedBuffer {
@@ -19,6 +22,10 @@ private:
 	std::queue<std::vector<char>> q;
 
 	// add necessary synchronization variables and data structures 
+	std::mutex m;
+	std::condition_variable underflow_guard; //notify this when data is availible so it can chill
+	std::condition_variable overflow_guard; //slots are availible
+
 
 public:
 	BoundedBuffer (int _cap);
