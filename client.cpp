@@ -164,12 +164,12 @@ int main (int argc, char* argv[]) {
             FIFORequestChannel* chan0 = new FIFORequestChannel(buf0, FIFORequestChannel::CLIENT_SIDE);
             channels.push_back(chan0);
 
-            //workers.push_back(thread(worker_thread_function, ));
+            workers.push_back(thread(worker_thread_function, request_buffer, response_buffer, chan0));
         }
         
         for (int i = 0; i < h; i++)
         {
-            //hist.push_back(thread(histogram_thread_function, ));
+            hist.push_back(thread(histogram_thread_function, response_buffer, hc));
         }
     }
     else {
