@@ -150,7 +150,7 @@ int main (int argc, char* argv[]) {
     /* create all threads here */
     if (f == "")
     {
-        for (int i = 1; i <= p; i++)
+        for (int i = 0; i < p; i++)
         {
             producers.push_back(thread(patient_thread_function, i, n, request_buffer));
         }
