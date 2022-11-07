@@ -73,6 +73,7 @@ void histogram_thread_function (BoundedBuffer* response_buffer, HistogramCollect
 
 
 int main (int argc, char* argv[]) {
+
     int n = 1000;	// default number of requests per "patient"
     int p = 10;		// number of patients [1,15]
     int w = 100;	// default number of worker threads
@@ -80,6 +81,7 @@ int main (int argc, char* argv[]) {
     int b = 20;		// default capacity of the request buffer (should be changed)
 	int m = MAX_MESSAGE;	// default capacity of the message buffer
 	string f = "";	// name of file to be transferred
+
     
     // read arguments
     int opt;
@@ -108,7 +110,8 @@ int main (int argc, char* argv[]) {
                 break;
 		}
 	}
-    
+
+
 	// fork and exec the server
     int pid = fork();
     if (pid == 0) {
@@ -146,14 +149,18 @@ int main (int argc, char* argv[]) {
     struct timeval start, end;
     gettimeofday(&start, 0);
 
+    cout << "ye" << endl;
+    cout << f << endl;
+
     /* create all threads here */
     if (f == "")
     {
-        for (int i = 0; i < p; i++)
+        cout << "y" << endl;
+        for (int i = 1; i <= p; i++) //0 - p or 1 - p+1 ?
         {
             producers.push_back(thread(patient_thread_function, i, n, &request_buffer));
         }
-
+        cout << "y" << endl;
         for (int i = 0; i < w; i++)
         {
             MESSAGE_TYPE nc = NEWCHANNEL_MSG;
@@ -167,11 +174,13 @@ int main (int argc, char* argv[]) {
             workers.push_back(thread(worker_thread_function, &request_buffer, &response_buffer, chan0));
             //BoundedBuffer* request_buffer, BoundedBuffer* response_buffer, FIFORequestChannel* chan
         }
+        cout << "y" << endl;
         
         for (int i = 0; i < h; i++)
         {
             hist.push_back(thread(histogram_thread_function, &response_buffer, &hc));
         }
+        cout << "ye" << endl;
     }
     else {
         //producers.push_back(thread(file_thread_function, ));
@@ -194,24 +203,21 @@ int main (int argc, char* argv[]) {
 	/* join all threads here */
     for (int i = 0; i < p; i++)
     {
-        //producers.at(i).join();
+        producers.at(i).join();
     }
     //All producers are now done
     for (int i = 0; i < w; i++)
     {
         MESSAGE_TYPE mm = QUIT_MSG;
         request_buffer.push((char*) &mm, sizeof(MESSAGE_TYPE));
-        //consumers.at(i).join();
-    }
-    for (int i = 0; i < n*p; i++)
-    {
-        MESSAGE_TYPE mm = QUIT_MSG;
-        response_buffer.push((char*) &mm, sizeof(MESSAGE_TYPE));
+        workers.at(i).join();
     }
 
     for (int i = 0; i < h; i++)
     {
-        //hist.at(i).join();
+        MESSAGE_TYPE mm = QUIT_MSG;
+        response_buffer.push((char*) &mm, sizeof(MESSAGE_TYPE));
+        hist.at(i).join();
     }
 
 
