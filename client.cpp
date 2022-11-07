@@ -15,7 +15,6 @@
 
 using namespace std;
 
-
 void patient_thread_function (int patientNo, int requestNum, BoundedBuffer* request_buffer) {
     // functionality of the patient threads
     char buf[MAX_MESSAGE];
@@ -152,7 +151,7 @@ int main (int argc, char* argv[]) {
     {
         for (int i = 0; i < p; i++)
         {
-            producers.push_back(thread(patient_thread_function, i, n, request_buffer));
+            producers.push_back(thread(patient_thread_function, i, n, &request_buffer));
         }
 
         for (int i = 0; i < w; i++)
@@ -164,12 +163,14 @@ int main (int argc, char* argv[]) {
             FIFORequestChannel* chan0 = new FIFORequestChannel(buf0, FIFORequestChannel::CLIENT_SIDE);
             channels.push_back(chan0);
 
-            workers.push_back(thread(worker_thread_function, request_buffer, response_buffer, chan0));
+            //thread(worker_thread_function, &request_buffer, &response_buffer, chan);
+            workers.push_back(thread(worker_thread_function, &request_buffer, &response_buffer, chan0));
+            //BoundedBuffer* request_buffer, BoundedBuffer* response_buffer, FIFORequestChannel* chan
         }
         
         for (int i = 0; i < h; i++)
         {
-            hist.push_back(thread(histogram_thread_function, response_buffer, hc));
+            hist.push_back(thread(histogram_thread_function, &response_buffer, &hc));
         }
     }
     else {
