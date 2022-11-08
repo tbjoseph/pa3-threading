@@ -97,12 +97,15 @@ void worker_thread_function (string f, BoundedBuffer* request_buffer, BoundedBuf
         else if (m == FILE_MSG) {
             filemsg* file_req = (filemsg*)buf;
             char* buf3 = new char[file_req->length];
+
             chan->cwrite(buf, size); // question
 			chan->cread(buf3, file_req->length); //answer
+
             FILE* file = fopen("./received/x1.csv", "a");
-            fseek(file, file_req->offset, SEEK_SET);
+            //fseek(file, file_req->offset, SEEK_SET);
             fwrite(buf3, 1, file_req->length, file);
             fclose(file);
+
             delete[] buf3;
         }
         else if (m == QUIT_MSG) break;
