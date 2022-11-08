@@ -102,7 +102,7 @@ void worker_thread_function (string f, BoundedBuffer* request_buffer, BoundedBuf
 			chan->cread(buf3, file_req->length); //answer
 
             FILE* file = fopen("./received/x1.csv", "a");
-            //fseek(file, file_req->offset, SEEK_SET);
+            fseek(file, file_req->offset, SEEK_SET);
             fwrite(buf3, 1, file_req->length, file);
             fclose(file);
 
