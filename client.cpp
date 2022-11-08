@@ -39,19 +39,21 @@ void worker_thread_function (BoundedBuffer* request_buffer, BoundedBuffer* respo
         int size = request_buffer->pop(buf, MAX_MESSAGE);
 
         MESSAGE_TYPE m = *((MESSAGE_TYPE*) buf);
+        //cout << m << endl;
         if (m == DATA_MSG) { //may need to change to f == ""
             double reply;
-            chan->cread(buf, sizeof(datamsg)); // question
+            chan->cwrite(buf, size); // question
 			chan->cread(&reply, sizeof(double)); //answer
             datamsg* d = (datamsg*) buf;
             pair<int, double> pair_;
             pair_.first = d->person;
             pair_.second = reply;
-            response_buffer->push( (char*) &pair_, sizeof(pair<int, double>)/sizeof(char) );
+            response_buffer->push( (char*) &pair_, sizeof(pair<int, double>) );
         }
         else if (m == FILE_MSG) {
-            size++;
+            
         }
+        else if (m == 8) cout << "Huhw?" << endl;
         else if (m == QUIT_MSG) break;
     }
 }
@@ -63,9 +65,10 @@ void histogram_thread_function (BoundedBuffer* response_buffer, HistogramCollect
     {
         char buf[MAX_MESSAGE];
         response_buffer->pop(buf, MAX_MESSAGE);
-        MESSAGE_TYPE m = *((MESSAGE_TYPE*) buf);
-        if (m == QUIT_MSG) break;
+        //MESSAGE_TYPE m = *((MESSAGE_TYPE*) buf);
         pair<int, double>* pair_ = (pair<int, double>*) buf;
+        if (pair_->first == -1) break;
+        //else if (m == 8) cout << "Huh?" << endl;;
         hc->update(pair_->first, pair_->second);
     }
     
@@ -125,18 +128,18 @@ int main (int argc, char* argv[]) {
 	HistogramCollection hc;
 
     vector<thread> producers;
-    if (f == "") producers.resize(p);
-    else producers.resize(1);
+    //if (f == "") producers.resize(p);
+    //else producers.resize(1);
     
     vector<FIFORequestChannel*> channels;
-    channels.resize(w);
+    //channels.resize(w);
 
     vector<thread> workers;
-    workers.resize(w);
+    //workers.resize(w);
 
     vector<thread> hist;
-    if (f == "") producers.resize(h);
-    else producers.resize(0);
+    //if (f == "") producers.resize(h);
+    //else producers.resize(0);
 
 
     // making histograms and adding to collection
@@ -149,18 +152,14 @@ int main (int argc, char* argv[]) {
     struct timeval start, end;
     gettimeofday(&start, 0);
 
-    cout << "ye" << endl;
-    cout << f << endl;
-
     /* create all threads here */
     if (f == "")
     {
-        cout << "y" << endl;
         for (int i = 1; i <= p; i++) //0 - p or 1 - p+1 ?
         {
             producers.push_back(thread(patient_thread_function, i, n, &request_buffer));
         }
-        cout << "y" << endl;
+    
         for (int i = 0; i < w; i++)
         {
             MESSAGE_TYPE nc = NEWCHANNEL_MSG;
@@ -170,17 +169,16 @@ int main (int argc, char* argv[]) {
             FIFORequestChannel* chan0 = new FIFORequestChannel(buf0, FIFORequestChannel::CLIENT_SIDE);
             channels.push_back(chan0);
 
-            //thread(worker_thread_function, &request_buffer, &response_buffer, chan);
             workers.push_back(thread(worker_thread_function, &request_buffer, &response_buffer, chan0));
-            //BoundedBuffer* request_buffer, BoundedBuffer* response_buffer, FIFORequestChannel* chan
+
         }
-        cout << "y" << endl;
+    
         
         for (int i = 0; i < h; i++)
         {
             hist.push_back(thread(histogram_thread_function, &response_buffer, &hc));
         }
-        cout << "ye" << endl;
+
     }
     else {
         //producers.push_back(thread(file_thread_function, ));
@@ -198,25 +196,39 @@ int main (int argc, char* argv[]) {
         }
         
     }
-    
 
 	/* join all threads here */
+    //cout << "yee" << endl;
     for (int i = 0; i < p; i++)
     {
         producers.at(i).join();
     }
+    //cout << "yo" << endl;
+
     //All producers are now done
     for (int i = 0; i < w; i++)
     {
         MESSAGE_TYPE mm = QUIT_MSG;
         request_buffer.push((char*) &mm, sizeof(MESSAGE_TYPE));
+        //workers.at(i).join();
+    }
+    for (int i = 0; i < w; i++)
+    {
         workers.at(i).join();
     }
 
+    //All workers are now done
     for (int i = 0; i < h; i++)
     {
-        MESSAGE_TYPE mm = QUIT_MSG;
-        response_buffer.push((char*) &mm, sizeof(MESSAGE_TYPE));
+        pair<int, double> pair_;
+        pair_.first = -1;
+        pair_.second = -1;
+        response_buffer.push((char*) &pair_, sizeof(pair<int, double>));
+        //response_buffer->push( (char*) &pair_, sizeof(pair<int, double>) );
+        //hist.at(i).join();
+    }
+    for (int i = 0; i < h; i++)
+    {
         hist.at(i).join();
     }
 
