@@ -98,7 +98,7 @@ void worker_thread_function (BoundedBuffer* request_buffer, BoundedBuffer* respo
             filemsg* file_req = (filemsg*)buf;
             char* buf3 = new char[file_req->length];
 
-            cout << "yuj" << endl;
+            //cout << "yuj" << endl;
             chan->cwrite(buf, size); // question
 			chan->cread(buf3, file_req->length); //answer
 
@@ -240,7 +240,7 @@ int main (int argc, char* argv[]) {
         producers.push_back(thread(file_thread_function, f, m, &request_buffer, chan));
         //void file_thread_function (string f, int m_, BoundedBuffer* request_buffer, FIFORequestChannel* chan)
 
-        cout << "bruh" << endl;
+        //cout << "bruh" << endl;
         for (int i = 0; i < w; i++)
         {
             MESSAGE_TYPE nc = NEWCHANNEL_MSG;
@@ -252,7 +252,7 @@ int main (int argc, char* argv[]) {
 
             workers.push_back(thread(worker_thread_function, &request_buffer, &response_buffer, chan0));
         }
-        cout << "huh" << endl;
+        //cout << "huh" << endl;
 
         h = 0;
         p = 1; //Maybe?
