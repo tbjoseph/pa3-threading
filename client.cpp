@@ -46,6 +46,7 @@ void file_thread_function (string f, int m_, BoundedBuffer* request_buffer, FIFO
 
     FILE* file = fopen("./received/x1.csv", "wb");
     fseek(file, filesize, SEEK_SET);
+    fclose(file);
 
     int64_t i;
     //get file contents
@@ -73,7 +74,6 @@ void file_thread_function (string f, int m_, BoundedBuffer* request_buffer, FIFO
 	}
 
 	delete[] buf2;
-    fclose(file);
 }
 
 void worker_thread_function (BoundedBuffer* request_buffer, BoundedBuffer* response_buffer, FIFORequestChannel* chan) {
