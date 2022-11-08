@@ -76,7 +76,7 @@ void file_thread_function (string f, int m_, BoundedBuffer* request_buffer, FIFO
     fclose(file);
 }
 
-void worker_thread_function (string f, BoundedBuffer* request_buffer, BoundedBuffer* response_buffer, FIFORequestChannel* chan) {
+void worker_thread_function (BoundedBuffer* request_buffer, BoundedBuffer* response_buffer, FIFORequestChannel* chan) {
     // functionality of the worker threads
     for (;;) {
         char buf[MAX_MESSAGE];
@@ -98,10 +98,11 @@ void worker_thread_function (string f, BoundedBuffer* request_buffer, BoundedBuf
             filemsg* file_req = (filemsg*)buf;
             char* buf3 = new char[file_req->length];
 
+            cout << "yuj" << endl;
             chan->cwrite(buf, size); // question
 			chan->cread(buf3, file_req->length); //answer
 
-            FILE* file = fopen("./received/x1.csv", "a");
+            FILE* file = fopen("./received/x1.csv", "rb+");
             fseek(file, file_req->offset, SEEK_SET);
             fwrite(buf3, 1, file_req->length, file);
             fclose(file);
@@ -223,7 +224,7 @@ int main (int argc, char* argv[]) {
             FIFORequestChannel* chan0 = new FIFORequestChannel(buf0, FIFORequestChannel::CLIENT_SIDE);
             channels.push_back(chan0);
 
-            workers.push_back(thread(worker_thread_function, f, &request_buffer, &response_buffer, chan0));
+            workers.push_back(thread(worker_thread_function, &request_buffer, &response_buffer, chan0));
             //void worker_thread_function (string f, BoundedBuffer* request_buffer, BoundedBuffer* response_buffer, FIFORequestChannel* chan) {
 
         }
@@ -239,6 +240,7 @@ int main (int argc, char* argv[]) {
         producers.push_back(thread(file_thread_function, f, m, &request_buffer, chan));
         //void file_thread_function (string f, int m_, BoundedBuffer* request_buffer, FIFORequestChannel* chan)
 
+        cout << "bruh" << endl;
         for (int i = 0; i < w; i++)
         {
             MESSAGE_TYPE nc = NEWCHANNEL_MSG;
@@ -248,8 +250,9 @@ int main (int argc, char* argv[]) {
             FIFORequestChannel* chan0 = new FIFORequestChannel(buf0, FIFORequestChannel::CLIENT_SIDE);
             channels.push_back(chan0);
 
-            workers.push_back(thread(worker_thread_function, f, &request_buffer, &response_buffer, chan0));
+            workers.push_back(thread(worker_thread_function, &request_buffer, &response_buffer, chan0));
         }
+        cout << "huh" << endl;
 
         h = 0;
         p = 1; //Maybe?
