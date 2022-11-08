@@ -28,11 +28,55 @@ void patient_thread_function (int patientNo, int requestNum, BoundedBuffer* requ
     
 }
 
-void file_thread_function (/* add necessary arguments */) {
+void file_thread_function (string f, int m_, BoundedBuffer* request_buffer, FIFORequestChannel* chan) {
     // functionality of the file thread
+
+    filemsg fm(0, 0);
+	string fname = f;
+
+	int len = sizeof(filemsg) + (fname.size() + 1);
+	char* buf2 = new char[len];
+	memcpy(buf2, &fm, sizeof(filemsg));
+	strcpy(buf2 + sizeof(filemsg), fname.c_str());
+
+    chan->cwrite(buf2, len);  // I want the file length;
+	int64_t filesize;
+	chan->cread(&filesize, sizeof(int64_t));
+	filemsg* file_req = (filemsg*)buf2;
+
+    FILE* file = fopen("./received/x1.csv", "wb");
+    fseek(file, filesize, SEEK_SET);
+
+    int64_t i;
+    //get file contents
+	for (i = 0; i < filesize/m_; i++) {
+		file_req->offset = m_ * i;
+		file_req->length = m_;
+		request_buffer->push(buf2, len);
+        
+        
+        //chan.cwrite(buf2, len);
+		//chan.cread(buf3, m_);
+		//write into file
+		//for (int j = 0; j < m_; j++) file << buf3[j];
+	}
+
+	int remainder = filesize % m_;
+	if (remainder > 0) {
+		file_req->offset = m_ * i;
+		file_req->length = remainder;
+        request_buffer->push(buf2, len);
+		
+        //chan.cwrite(buf2, len);
+		//chan.cread(buf3, remainder);
+		//for (int j = 0; j < remainder; j++) file << buf3[j];
+	}
+
+	delete[] buf2;
+    fclose(file);
 }
 
-void worker_thread_function (BoundedBuffer* request_buffer, BoundedBuffer* response_buffer, FIFORequestChannel* chan) {
+void worker_thread_function (string f, BoundedBuffer* request_buffer, BoundedBuffer* response_buffer, FIFORequestChannel* chan) {
     // functionality of the worker threads
     for (;;) {
         char buf[MAX_MESSAGE];
@@ -51,9 +95,16 @@ void worker_thread_function (BoundedBuffer* request_buffer, BoundedBuffer* respo
             response_buffer->push( (char*) &pair_, sizeof(pair<int, double>) );
         }
         else if (m == FILE_MSG) {
-            
+            filemsg* file_req = (filemsg*)buf;
+            char* buf3 = new char[file_req->length];
+            chan->cwrite(buf, size); // question
+			chan->cread(buf3, file_req->length); //answer
+            FILE* file = fopen("./received/x1.csv", "a");
+            fseek(file, file_req->offset, SEEK_SET);
+            fwrite(buf3, 1, file_req->length, file);
+            fclose(file);
+            delete[] buf3;
         }
-        else if (m == 8) cout << "Huhw?" << endl;
         else if (m == QUIT_MSG) break;
     }
 }
@@ -169,7 +220,8 @@ int main (int argc, char* argv[]) {
             FIFORequestChannel* chan0 = new FIFORequestChannel(buf0, FIFORequestChannel::CLIENT_SIDE);
             channels.push_back(chan0);
 
-            workers.push_back(thread(worker_thread_function, &request_buffer, &response_buffer, chan0));
+            workers.push_back(thread(worker_thread_function, f, &request_buffer, &response_buffer, chan0));
+            //void worker_thread_function (string f, BoundedBuffer* request_buffer, BoundedBuffer* response_buffer, FIFORequestChannel* chan) {
 
         }
     
@@ -180,20 +232,24 @@ int main (int argc, char* argv[]) {
         }
 
     }
-    else {
-        //producers.push_back(thread(file_thread_function, ));
+    else { //file request
+        producers.push_back(thread(file_thread_function, f, m, &request_buffer, chan));
+        //void file_thread_function (string f, int m_, BoundedBuffer* request_buffer, FIFORequestChannel* chan)
 
         for (int i = 0; i < w; i++)
         {
-            //workers.push_back(thread(worker_thread_function, ));
-
             MESSAGE_TYPE nc = NEWCHANNEL_MSG;
             chan->cwrite(&nc, sizeof(MESSAGE_TYPE));
             char buf0[MAX_MESSAGE];
             chan->cread(buf0, MAX_MESSAGE);
             FIFORequestChannel* chan0 = new FIFORequestChannel(buf0, FIFORequestChannel::CLIENT_SIDE);
             channels.push_back(chan0);
+
+            workers.push_back(thread(worker_thread_function, f, &request_buffer, &response_buffer, chan0));
         }
+
+        h = 0;
+        p = 1; //Maybe?
         
     }
 
